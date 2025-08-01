@@ -22,7 +22,7 @@ Design and architecture of an n8n-based framework that orchestrates LLM-powered 
 | **HealtcareAgent** 			| Core multi-agent flow combining scheduling, triage, and diagnosis   |
 | **EmailAgent**                | Classifies, prioritizes, and routes incoming emails                 |
 | **CalendarAgent**             | Suggests and schedules available appointments                       |
-| **ScrumAgents**               | An experimental coding workflow                                     |
+| **ScrumAgents**               | Experimental code development workflow                              |
 
 ### 2. Plugin Prototype
 
