@@ -17,14 +17,15 @@
 - **System and Project Architecture** using **React** and **AI** tools to design scalable and maintainable solutions
 
 ## Methodological Skills
-- **Product Ownership** (Scrum, Agile, PO role)
+- **Product Ownership** (Scrum, Agile, PO role,)
 - **Story Mapping**, **Kanban**, **OKRs**
 - **UX Thinking** and **Design Thinking**
 - **AI Prompt Engineering**
 - **Prototyping and Project Architecture** using **React** 
 - **Team Facilitation**
 - **Cross-disciplinary Communication**
-
+- **Project Development** (KHM Cologne)
+ 
 ## Languages
 - **German** (native)
 - **English** (fluent, C1/C2)
