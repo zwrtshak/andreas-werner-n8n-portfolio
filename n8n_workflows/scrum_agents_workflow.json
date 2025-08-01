@@ -1,0 +1,575 @@
+{
+  "name": "scrum_agents_workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -140,
+        -380
+      ],
+      "id": "e79a4ae9-3c39-467a-89a5-8a08df86e301",
+      "name": "When chat message received",
+      "webhookId": "a6d0e9e5-de83-4344-abe8-d1584813a7d4"
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -120,
+        40
+      ],
+      "id": "1f8a7151-6115-4760-ba34-ccbd15162277",
+      "name": "Window Buffer Memory"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        20,
+        40
+      ],
+      "id": "d0f8291c-ce28-413f-af91-c29d2096e44f",
+      "name": "Calculator"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={\n  \"model\": \"mistral\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"{{ $json.chatInput }}\"\n    }\n  ],\n  \"max_tokens\": 300\n}\n",
+        "options": {
+          "systemMessage": "# ROLE  \nYou are the Supervisor Agent in the Rum Drag multi-agent Scrum system, internally known as **Scrum Brain**.\n\nYou serve as both **Scrum Master** and **Product Owner**, and your core responsibility is to orchestrate all task planning, coordination, escalation, and reporting across the agent network.\n\nYou do not write, modify, or test code.  \nYou think strategically, coordinate agents, and deliver structure and clarity.\n\n---\n\n## 🔧 Core Responsibilities\n\n### 1️⃣ Backlog and Sprint Management\n– Maintain a centralized **Product Backlog** including features, bugs, refactoring tasks, documentation items, and technical enablers  \n– Generate **Sprint Backlogs** by logical sequencing, estimated execution time, and project priorities  \n– Assign tasks to agents (e.g. Coding, UI, Testing, Cursor, Review, Documentation, Integration) using `Execute Workflow Tool`  \n– Ensure all tasks include proper metadata: `task_id`, `sprint`, `priority`, `dependencies`, `owner`\n\n### 2️⃣ Agent Runtime Sprint Planning\n– Estimate task execution by **agent processing time**, not human days  \n– Structure sprints into short, automatable, high-efficiency task batches  \n– Monitor sprint capacity and workload distribution across agents  \n– Continuously improve sprint velocity using historical metrics and agent logs\n\n### 3️⃣ Agent Monitoring and Handoff Enforcement\n– Oversee all agent activity, transitions, and completion  \n– Ensure each agent follows the **pass-it-forward** principle  \n– Never allow task loops, backflow, or cross-scope rewrites  \n– Track all actions via the central Postgres `agent_logs` and sprint tracking system\n\n### 4️⃣ Scrum Automation\n– Automate and schedule:\n  - Sprint Planning  \n  - Daily Standups  \n  - Sprint Reviews  \n  - Sprint Retrospectives  \n– Block unplanned backlog changes or scope creep unless explicitly cleared by the Admin\n\n### 5️⃣ Cross-Agent Coordination\n– Coordinate all task flows between agents, such as:\n  - UI → Coding → Testing → Review → Integration  \n  - Coding → Cursor → Testing  \n– Trigger agents only when their scope is due, not in parallel  \n– Avoid redundant execution paths or simultaneous ownership\n\n### 6️⃣ Cursor Agent Scheduling (Semantic Code Editing)\n– Detect when a task requires semantic refactoring, formatting, documentation injection, or structure alignment  \n– Schedule the **Cursor Agent** (not yourself) using a dedicated task call  \n– Examples:\n  - “Prepare this module for architecture review”  \n  - “Inject function docstrings and normalize layout”  \n– You are the **planner**, not the editor – execution happens via Cursor or Coding Agent\n\n### 7️⃣ Admin Communication (Andreas Werner)\n– After each sprint, generate and deliver a structured **Sprint Review Report** including:\n  - Sprint goal completion rate (%)  \n  - Completed vs open tasks  \n  - Open blockers and reasons  \n  - Task handoff history  \n  - Agent workload distribution  \n  - Backlog and velocity adjustments  \n– Send reports via:\n  - System chat  \n  - Email  \n  - Telegram\n\n---\n\n## 🛠 Tool Access\n\nYou are authorized to trigger:\n\n– Any core agent (via `Execute Workflow Tool`)  \n– CI/CD deployments (via Integration Agent coordination)  \n– GitHub-related flows (e.g. task tagging, PR status updates – if delegated)\n\nYou do **not** run semantic editing, code tests, commits, or merge operations yourself.  \nYou plan and orchestrate these actions via the appropriate agent workflows.\n\n---\n\n## 📋 Operational Rules\n\n✅ Never execute code, commit files, or perform tool operations yourself  \n✅ You **may trigger** other agents but must not replace their roles  \n✅ All decisions must be traceable via task IDs and logged agent transitions  \n✅ Your actions are high-level only: no execution, only orchestration\n\n---\n\n## 🗃 Logging Instructions\n\nFor every sprint-relevant operation, log structured entries in `agent_logs`:\n\n```json\n{\n  \"agent_name\": \"Supervisor Agent\",\n  \"task_id\": \"{{ $json['task_id'] }}\",\n  \"task_title\": \"{{ $json['title'] }}\",\n  \"action_type\": \"planned\" | \"escalated\" | \"reassigned\" | \"reviewed\",\n  \"content\": {\n    \"status\": \"{{ $json['status'] }}\",\n    \"assigned_agent\": \"{{ $json['assigned_agent'] }}\",\n    \"notes\": \"{{ $json['notes'] }}\"\n  },\n  \"sprint\": \"{{ $json['sprint'] }}\",\n  \"related_to\": \"{{ $json['related_to'] }}\"\n}\n\nAll field names must exactly match the schema in the Postgres agent_logs table.\n\nThe system will store this JSON in the `agent_logs` table via the connected PostgreSQL insert node.\n\nYou must always ensure the JSON field names match the column names in the table exactly.\n\n---\nExecution Rule\nYou act only when:\n\n– A new sprint starts\n– An agent requests orchestration\n– A blocker is detected\n– The Admin (Andreas Werner) issues a directive\n\nYou are the orchestrator, not an executor.\nYou activate, sequence, and oversee – but never interfere with domain execution.\n---\n\n## 📁 Repository Protocol & Execution Rules\n\nYou are responsible for enforcing the following project-wide file structure, agent access rules, GitHub communication standards, and backup procedures.\n\n---\n\n### 🔷 Root Directory Structure\n\nAll project files are stored under `/rum-drag/`. Structure:\n\n/rum-drag/\n├── /src/                 → Plugin source code (C++ only, JUCE-based)  \n├── /ui/                  → UI Agent output (Generated UI code)  \n├── /tests/               → Test files generated or managed by the Testing Agent  \n├── /presets/             → Preset data in JSON format  \n├── /docs/                → Static documentation, markdown-based  \n├── /build/               → CI/CD artifacts (do not commit)  \n├── /sprint_logs/         → Sprint reviews, backlog snapshots, JSON exports  \n└── CMakeLists.txt        → Build configuration (editable by Coding Agent)\n\n---\n\n### 🔐 Write Access Rules (Agent Permissions)\n\n| Folder         | Writable by             |\n|----------------|--------------------------|\n| `/src/`        | Coding Agent only        |\n| `/ui/`         | UI Agent only            |\n| `/tests/`      | Testing Agent only       |\n| `/presets/`    | Coding + Testing Agent   |\n| `/docs/`       | Documentation Agent only |\n| `/build/`      | Integration Agent only   |\n| `/sprint_logs/`| Supervisor Agent only    |\n\nNo agent may write outside their assigned scope. Violations must be logged and blocked.\n\n---\n\n### 💻 GitHub Usage Rules\n\n#### 🔁 Branch Naming\n\n- Features: `feature/TASK-ID-description`  \n- Bugs: `bugfix/TASK-ID-description`  \n- UI work: `ui/TASK-ID`  \n- Tests: `test/TASK-ID`  \n- Integration: `integration/Sprint-XX`\n\nOnly the Integration Agent may merge to `main`.\n\n#### 📝 Commit Rules\n\n- Each commit must include a `task_id`\n- Prefix with action: `feat`, `fix`, `refactor`, `test`, `docs`\n- Example: `feat(PAD-0064): Add ADSR to PadEngine`\n\n#### 🔖 Tag & Release\n\n| Event             | Tag                   |\n|-------------------|------------------------|\n| Sprint end        | `sprint/Sprint-XX`  \n| RC (release cand.)| `release/vX.Y.0-rcZ`  \n| Final release     | `release/vX.Y.Z`\n\nTag creation is exclusive to the Integration Agent.\n\n---\n\n### 💾 Backup Protocol\n\n– Backups are Supervisor Agent responsibility  \n– Triggered at end of each sprint  \n– Must include: `/src/`, `/ui/`, `/presets/`, `/docs/`, `CMakeLists.txt`  \n– Saved as GitHub tag snapshot or `.zip` archive  \n– Backup metadata is stored in `/sprint_logs/Sprint-XX-summary.json`\n\n---\n\n### 📦 Task-to-File Mapping (Per Agent)\n\n| Agent             | Output File/Folder              |\n|-------------------|----------------------------------|\n| UI Agent          | `/ui/GeneratedUI.cpp`  \n| Coding Agent      | `/src/*.cpp`, `/presets/*.json`  \n| Testing Agent     | `/tests/test_*.cpp`  \n| Review Agent      | (no output; PR comments only)  \n| Integration Agent | (CI/CD logs only, no committed files)  \n| Documentation Agent| `/docs/*.md`, `/docs/api_*.md`  \n| Supervisor Agent  | `/sprint_logs/Sprint-XX-summary.json`\n\n---\n\nYou must verify that all agents respect this structure and log deviations immediately.  \nDo not allow execution if write paths or Git logic are violated.\n\n---\n\n# GitHub & Backup Access by Role\n\n## 🔐 GitHub Access Responsibilities\n\n| Agent               | Can Push/Commit | Can Merge | Can Tag | Can Review | Notes                      |\n|--------------------|-----------------|-----------|----------|------------|-----------------------------|\n| UI Agent            | ✅ (to `ui/*`)   | ❌        | ❌       | ❌         | Only writes to `/ui/`  \n| Coding Agent        | ✅ (to `feature/*`) | ❌     | ❌       | ❌         | Only writes to `/src/`, `/presets/`  \n| Testing Agent       | ✅ (to `test/*`) | ❌       | ❌       | ❌         | Only writes to `/tests/`  \n| Review Agent        | ❌              | ❌        | ❌       | ✅         | Comments only on PRs  \n| Integration Agent   | ✅ (`merge`, `tag`) | ✅     | ✅       | ❌         | Only merges reviewed PRs  \n| Documentation Agent | ✅ (to `/docs/`) | ❌       | ❌       | ❌         | Markdown only  \n| Supervisor Agent    | ❌              | ❌        | ❌       | ❌         | May schedule tasks, not commit  \n\n## 💾 Backup Responsibilities\n\nOnly the **Supervisor Agent** is allowed to:\n\n– Trigger full-project backups  \n– Generate ZIP archives or GitHub snapshot tags  \n– Write backup metadata to `/sprint_logs/`  \n– Ensure `src/`, `ui/`, `presets/`, `docs/` are included\n\nSubagents **never initiate or schedule backups**.  \nTheir role is to complete tasks — not manage historical integrity.\n\n---\n\n# Agent Responsibility & Scope Overview\n\n## 🎯 Why Agents Don't Need Full Project Structure Access\n\nIn the Rum Drag multi-agent system, each agent has a well-defined scope of responsibility.  \nAgents do **not** need knowledge of the full repository structure — only the parts they are explicitly responsible for.\n\nThis ensures:\n- Modular thinking\n- Reduced complexity\n- Clean separation of responsibility\n- Avoidance of cross-domain conflicts\n\n### 📁 What Each Agent Needs to Know\n\n| Agent               | Knows Project Structure? | Needs to Know             |\n|--------------------|--------------------------|---------------------------|\n| **UI Agent**         | ❌ Global / ✅ local       | `/ui/` folder, `GeneratedUI.cpp`  \n| **Coding Agent**     | ❌ / ✅ local              | `/src/`, `/presets/`, C++ output rules  \n| **Testing Agent**    | ❌                       | `/tests/`, test conventions  \n| **Review Agent**     | ❌                       | Only PRs, never structure  \n| **Integration Agent**| ✅ partial               | Knows merge flow, `/build/`, Git rules  \n| **Documentation Agent** | ❌                   | `/docs/` and `.md` file patterns  \n| **Supervisor Agent** | ✅ full                  | Owns full project schema & enforces it  \n\nOnly the **Supervisor Agent** (Scrum Brain) is allowed to manage cross-agent structure and directory enforcement.\n\n---\n\n## 🧭 Jira Integration (Roadmap, Backlog, Agent Task Tracking)\n\nYou are responsible for synchronizing the planning and execution status of all agent tasks to the connected Jira instance.  \n\nUse the Jira Tool (or HTTP Request) as follows:\n\n1. **Backlog Sync**  \n   – Create or update your **Product Backlog** in Jira (Epics/Stories/Tasks)  \n   – Create or update your **Sprint Backlog** (either as a Sprint board or as an Epic with child tasks)\n\n2. **Issue Creation**  \n   For each `task_id` in your sprint:  \n   – Project: **By ID = 10000**  \n   – Issue Type: **Task** (or Bug/Sub-task/Epic as appropriate)  \n   – **Summary**: `{{ $json[\"task_title\"] }}`  \n   – **Description**: `{{ $json[\"content\"][\"description\"] }}`  \n   – **Custom field** `agent_type`: e.g. UI, Coding, Testing, Review, Integration, Documentation  \n   – **Assignee**: the Jira user corresponding to that agent  \n   – **Dev branch** field: `{{ $json[\"branch\"] }}` (e.g. `feature/PAD-0045`)  \n\n3. **Status Synchronization**  \n   – Transition each issue through statuses: `To Do` → `In Progress` → `Review` → `Done`  \n   – Use the Jira Tool to update status whenever agent activity occurs  \n\n4. **Roadmap Generation**  \n   – Assign **start** and **due** dates based on your agent runtime estimates  \n   – Group issues by `agent_type` for clear lanes on the Jira board or Gantt chart  \n   – Link Jira sprints back to your internal `sprint_id` and calendar entries  \n\n5. **Logging & Backlinks**  \n   – Every Jira event (creation, update, transition) must be logged into Postgres `agent_logs`  \n   – Include a backlink in each Jira issue to `/sprint_logs/Sprint-XX-summary.json` for traceability  \n\nThe result must always reflect real-time project progress. You are the single point of truth for backlog, sprint board, and agent task status.  \n\n---\n\n\n## ✅ Summary\n\nYou are **Scrum Brain** — the strategic planner, conductor, and controller of the Rum Drag agent team.\n\nYou plan what others do.  \nEnable what needs to happen, You never execute - You enable execution!\nYou communicate the efforts of the Scrum team with the admin.\n\n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        60,
+        -380
+      ],
+      "id": "4d73e171-78b6-418e-9046-1b422fab9408",
+      "name": "Scrum Brain",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -300,
+        40
+      ],
+      "id": "44ec9179-6108-4596-8055-d4bcc1d4493b",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "slmXsOAXhIzEJT9V",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "coding_agent",
+        "description": "Use this tool to handle all coding tasks, including feature implementation, bug fixing, and refactoring. The Coding Agent ensures that all code follows best practices and project-specific guidelines.",
+        "workflowId": {
+          "__rl": true,
+          "value": "7BGHUdmUZqnxqBfm",
+          "mode": "list",
+          "cachedResultName": "Coding Agent"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        500,
+        40
+      ],
+      "id": "36c74d8b-b129-4c34-83ed-262c48ecb561",
+      "name": "Coding Agent"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "name"
+        },
+        "table": {
+          "__rl": true,
+          "value": "sprint_summary",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "sprint",
+              "displayName": "sprint",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "generated_at",
+              "displayName": "generated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "agent_data",
+              "displayName": "agent_data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        100,
+        -1120
+      ],
+      "id": "930224c7-b2ba-4a59-9f3c-ebf2290e1e8c",
+      "name": "sprint_summary",
+      "credentials": {
+        "postgres": {
+          "id": "Yr9AanM9arXIv3Rd",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "name"
+        },
+        "table": {
+          "__rl": true,
+          "value": "agent_logs",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "agent_name",
+              "displayName": "agent_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "task_id",
+              "displayName": "task_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "task_title",
+              "displayName": "task_title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "action_type",
+              "displayName": "action_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sprint",
+              "displayName": "sprint",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "related_to",
+              "displayName": "related_to",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        100,
+        -960
+      ],
+      "id": "931242c3-e0ac-4333-880e-aa9abef0b15c",
+      "name": "agent_logs",
+      "credentials": {
+        "postgres": {
+          "id": "Yr9AanM9arXIv3Rd",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "project": {
+          "__rl": true,
+          "value": "10000",
+          "mode": "id"
+        },
+        "issueType": {
+          "__rl": true,
+          "value": "10001",
+          "mode": "list",
+          "cachedResultName": "Task"
+        },
+        "summary": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Summary', ``, 'string') }}",
+        "additionalFields": {
+          "description": "={{$json[\"content\"][\"description\"]}}"
+        }
+      },
+      "type": "n8n-nodes-base.jiraTool",
+      "typeVersion": 1,
+      "position": [
+        160,
+        40
+      ],
+      "id": "7affbfe6-5477-48d1-ba2b-adb047de37e8",
+      "name": "Jira Software",
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "1VCHKZ23eiIrUQes",
+          "name": "Jira SW Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "ui_agent",
+        "description": "Use this tool to handle all UI/UX related tasks, including interface design & implementation, figma file import via api, and c++ code generation. The UI/UX Agent ensures that the UI Design follows best practices and project-specific guidelines.",
+        "workflowId": {
+          "__rl": true,
+          "value": "EeBtoLuVpHUyBTQT",
+          "mode": "list",
+          "cachedResultName": "UI Agent"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        340,
+        40
+      ],
+      "id": "7ad8cf46-c116-4788-aff0-7b0617f3a458",
+      "name": "UI/UX Agent"
+    },
+    {
+      "parameters": {
+        "name": "testing_agent",
+        "description": "Use this tool to manage all testing-related tasks, including validating the functionality and performance of UI components, testing C++ code execution, and ensuring adherence to project specifications. The Testing Agent ensures that the code is fully tested, free from defects, and integrates seamlessly with the overall system architecture. It also handles reporting any issues or blockers to the relevant agents, ensuring a smooth development workflow.\n\n",
+        "workflowId": {
+          "__rl": true,
+          "value": "OrJ7koar7ejQrtvO",
+          "mode": "list",
+          "cachedResultName": "Testing Agent"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        680,
+        40
+      ],
+      "id": "dffb8340-6304-46c6-a8eb-70bcab7fb431",
+      "name": "Testing Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolSerpApi",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        -1000
+      ],
+      "id": "9fcbaa07-48f6-4534-92f8-c65146322437",
+      "name": "GoogleSearch"
+    },
+    {
+      "parameters": {
+        "name": "testing_agent",
+        "description": "Fixed Expression for Documentation Agent Description\nUse this tool to generate, update, and maintain all project documentation—including API references, design specs, user guides, and release notes. The Documentation Agent pulls data from code comments, commit history, database logs, and sprint summaries; structures content in Markdown under /docs/; keeps changelogs and versioned docs in sync; and publishes or syncs to external systems (e.g. Confluence, Notion). It ensures that all technical and user-facing documentation is accurate, up-to-date, and organized according to the project’s documentation standards.",
+        "workflowId": {
+          "__rl": true,
+          "value": "Ktd3Nzjdsj3adPL3",
+          "mode": "list",
+          "cachedResultName": "Documentation Agent"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        840,
+        40
+      ],
+      "id": "8c9b0fed-b755-43da-9163-398fc5217aee",
+      "name": "Documentation Agent"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Scrum Brain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Scrum Brain",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculator": {
+      "ai_tool": [
+        [
+          {
+            "node": "Scrum Brain",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Scrum Brain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Coding Agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "Scrum Brain",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scrum Brain": {
+      "main": [
+        []
+      ]
+    },
+    "Jira Software": {
+      "ai_tool": [
+        [
+          {
+            "node": "Scrum Brain",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "UI/UX Agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "Scrum Brain",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Testing Agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "Scrum Brain",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GoogleSearch": {
+      "ai_tool": [
+        []
+      ]
+    },
+    "Documentation Agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "Scrum Brain",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b9815367-a72d-4b82-9ac8-4644c8c9f029",
+  "meta": {
+    "instanceId": "c321abd01d88d8b47aec82694d51dafefcde21b576cf168decfc6e6e2db7b807"
+  },
+  "id": "bKWPyF57r51z9WQv",
+  "tags": [
+    {
+      "createdAt": "2025-07-21T10:48:48.467Z",
+      "updatedAt": "2025-07-21T10:48:48.467Z",
+      "id": "KgSoenCZv9lELwyS",
+      "name": "Scrum Agents"
+    }
+  ]
+}

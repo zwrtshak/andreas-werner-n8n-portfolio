@@ -1,0 +1,378 @@
+{
+  "name": "healthcare_agent_workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        40,
+        580
+      ],
+      "id": "276b5769-89bf-4cfc-a37c-259065efc8de",
+      "name": "Window Buffer Memory"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "You are a SupervisorAgent for a dermatology practice. You are a TOOL COORDINATOR ONLY.\n\n**ABSOLUTE RULE: You MUST call tools. You NEVER write explanations or descriptions.**\n\n## WORKFLOW FOR EVERY INPUT\n\nStep 1: Call RAG_read tool with user input\nStep 2: Call chat_agent tool with formatted medical response  \nStep 3: Return chat_agent response as Final Answer - STOP EXECUTION\n\n**DO NOT EXPLAIN WHAT YOU WILL DO. JUST DO IT.**\n\n## TOOL CALLING INSTRUCTIONS\n\nFor ANY user input, immediately execute this exact sequence:\n\n### 1. RAG_read Tool Call\n```\n{\n  \"query\": \"[exact user input in German]\",\n  \"table\": \"dermarules\",\n  \"limit\": 3,\n  \"min_similarity\": 0.4\n}\n```\n\n**CRITICAL: After RAG_read returns ANY result (even empty), proceed to chat_agent. Never repeat RAG_read.**\n\n### 2. chat_agent Tool Call  \n```\n{\n  \"message\": \"[formatted German medical response based on RAG results]\"\n}\n```\n\n### 3. FINAL STEP\nReturn the chat_agent response directly to user. STOP.\n\n## MEDICAL RESPONSE FORMATTING\n\nWhen calling chat_agent, format the message using RAG_read results:\n\n**Template:**\n```\nGuten Tag!\n\nBasierend auf Ihrer Beschreibung von [USER_SYMPTOM] deutet dies auf [RAG_DIAGNOSIS] hin.\n\nEmpfohlene Maßnahmen:\n• [RAG_TREATMENT_1]\n• [RAG_TREATMENT_2]\n\n⚠️ Wichtiger Hinweis: Diese Einschätzung ersetzt nicht die persönliche ärztliche Beratung.\n\nMöchten Sie einen Termin vereinbaren?\n```\n\n**Variables to extract from RAG_read:**\n- USER_SYMPTOM: Patient's described symptoms\n- RAG_DIAGNOSIS: Most likely diagnosis from RAG results\n- RAG_TREATMENT_1: Primary treatment recommendation\n- RAG_TREATMENT_2: Secondary treatment recommendation\n\n## EMERGENCY DETECTION\n\nIf user input contains: \"Notfall\", \"akut\", \"dringend\", \"starke Schmerzen\", \"Blutung\", \"Atemnot\"\n\n**SKIP RAG_read** - Call chat_agent directly with:\n```\n{\n  \"message\": \"🚨 DRINGEND: Kontaktieren Sie SOFORT:\\n• Praxis-Notfall: 030-12345678\\n• Ärztlicher Bereitschaftsdienst: 116 117\\n• Bei lebensbedrohlichen Situationen: 112\\n\\nSuchen Sie umgehend ärztliche Hilfe auf!\"\n}\n```\n\n## EXECUTION COMPLETION RULES\n\n**CRITICAL STOPPING CONDITIONS:**\n- After RAG_read responds: NEVER call RAG_read again in the same request\n- After chat_agent responds: IMMEDIATELY return its response as Final Answer\n- Do NOT call any additional tools\n- Do NOT add your own commentary  \n- Do NOT say \"Task completed\" or similar\n- Do NOT analyze or modify the chat_agent response\n\n**EXECUTION FLOW:**\n1. ✅ RAG_read (once only) → Get medical data\n2. ✅ chat_agent (once only) → Format response for user\n3. ✅ Return chat_agent response → DONE\n\n**FORBIDDEN ACTIONS:**\n- ❌ Multiple RAG_read calls (NEVER call RAG_read twice)\n- ❌ Multiple chat_agent calls\n- ❌ Tool calls after chat_agent responds\n- ❌ Your own responses or explanations\n- ❌ Analyzing tool results beyond formatting for chat_agent\n- ❌ Repeating any tool call\n\n## ERROR HANDLING\n\nIf RAG_read returns no results:\n```\n{\n  \"message\": \"Guten Tag!\\n\\nFür eine genaue Einschätzung Ihres Hautproblems empfehle ich Ihnen, einen Termin in unserer Praxis zu vereinbaren. Unsere Ärzte können Ihnen nach einer persönlichen Untersuchung die beste Behandlung empfehlen.\\n\\nMöchten Sie einen Termin vereinbaren?\"\n}\n```\n\n**REMEMBER: RAG_read (ONCE) → chat_agent (ONCE) → Return chat_agent response as Final Answer. NOTHING ELSE.**\n\n**ABSOLUTE RULE: RAG_read can only be called ONCE per user request. After any RAG_read response, proceed directly to chat_agent.**",
+        "options": {
+          "maxIterations": 3,
+          "returnIntermediateSteps": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        480,
+        60
+      ],
+      "id": "f5bccb65-19c3-4813-8d98-54eebdcc875d",
+      "name": "supervisor_agent"
+    },
+    {
+      "parameters": {
+        "name": "email_agent",
+        "description": "Use this tool for all tasks related to email communication, including sending, receiving, managing, and organizing emails, as well as handling attachments and responding to inquiries.",
+        "workflowId": {
+          "__rl": true,
+          "value": "EwmyOa8SjB1z6XvK",
+          "mode": "list",
+          "cachedResultName": "email_agent"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        340,
+        580
+      ],
+      "id": "29779263-ff0c-446c-8a1a-daad4d41a8ef",
+      "name": "email_agent"
+    },
+    {
+      "parameters": {
+        "name": "contacts_agent",
+        "description": "Use this tool for all tasks related to email communication, including sending, receiving, managing, and organizing emails, as well as handling attachments and responding to inquiries.",
+        "workflowId": {
+          "__rl": true,
+          "value": "mlSeEpaGMYGhnJHH",
+          "mode": "list",
+          "cachedResultName": "contact_agent"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        500,
+        580
+      ],
+      "id": "d17d572c-fa81-4507-a48c-b08d05544131",
+      "name": "contacts_agent"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        1020,
+        580
+      ],
+      "id": "bc0eb695-94b0-4353-9f6d-5717a7cda870",
+      "name": "calculator"
+    },
+    {
+      "parameters": {
+        "name": "inventory_agent",
+        "description": "Use this agent for all tasks related to the inventory management of goods and medications, including tracking stock levels, placing orders, managing reorders, and handling any issues related to inventory shortages or discrepancies.",
+        "workflowId": {
+          "__rl": true,
+          "value": "tF4aBDfPxPhwCTYv",
+          "mode": "list",
+          "cachedResultName": "inventory_agent"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        860,
+        580
+      ],
+      "id": "62c8927b-9fcb-4aab-85fa-d1d0609a4e4f",
+      "name": "inventory_agent"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Search medical knowledge database for symptom analysis. MUST be called first for every user query. Search medical database and return results. Use once per query.",
+        "method": "=POST",
+        "url": "http://localhost:8000/rag/search",
+        "sendBody": true,
+        "specifyBody": "=json",
+        "parametersBody": {
+          "values": [
+            {}
+          ]
+        },
+        "jsonBody": "={\n  \"query\": \"{{ $json.query }}\",\n  \"table\": \"{{ $json.table }}\",\n  \"limit\": \"{{ $json.limit }}\",\n  \"min_similarity\": \"{{ $json.min_similarity }}\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        1200,
+        580
+      ],
+      "id": "220d45ae-f13c-4f9c-8ffa-9a936794c71b",
+      "name": "RAG_read"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        280,
+        60
+      ],
+      "id": "8402b4ea-2782-4cd3-b8f0-18760d82c9c9",
+      "name": "When chat message received",
+      "webhookId": "3cc48854-1cc2-4ecd-998c-d54b25175293"
+    },
+    {
+      "parameters": {
+        "name": "calendar_agent",
+        "description": "Use this tool for all tasks related to calendar management, including scheduling, rescheduling, canceling appointments, and managing reminders or notifications.",
+        "workflowId": {
+          "__rl": true,
+          "value": "j8sIZctVQ9xlPy9Y",
+          "mode": "list",
+          "cachedResultName": "calendar_agent"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        680,
+        580
+      ],
+      "id": "1ceb9e10-cdb6-4469-850d-3a5acbb6d9ab",
+      "name": "calendar_agent"
+    },
+    {
+      "parameters": {
+        "name": "chat_agent",
+        "description": "Use this tool to send plain-text, German-language replies back to the human supervisor. This tool does not perform any actions or trigger other workflows—it simply returns your natural-language message.",
+        "source": "parameter",
+        "workflowJson": "={\n  \"message\": \"{{ $json.message }}\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        200,
+        580
+      ],
+      "id": "b45b24f9-b2de-4cee-8abf-b6f88d585488",
+      "name": "chat_agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "llama3.1:8b-instruct-q4_K_M",
+          "mode": "list",
+          "cachedResultName": "llama3.1:8b-instruct-q4_K_M"
+        },
+        "options": {
+          "maxTokens": 4096,
+          "responseFormat": "text",
+          "presencePenalty": 0,
+          "temperature": 0.2,
+          "timeout": 120000,
+          "topP": 0.9
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -120,
+        580
+      ],
+      "id": "ea5c06ea-85c9-4c33-b32d-4ca00e04cc09",
+      "name": "Llama3",
+      "credentials": {
+        "openAiApi": {
+          "id": "OksK044LOVHGEoet",
+          "name": "Ollama"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "supervisor_agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "supervisor_agent": {
+      "main": [
+        []
+      ]
+    },
+    "email_agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "supervisor_agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "contacts_agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "supervisor_agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "calculator": {
+      "ai_tool": [
+        [
+          {
+            "node": "supervisor_agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "inventory_agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "supervisor_agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RAG_read": {
+      "ai_tool": [
+        [
+          {
+            "node": "supervisor_agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "supervisor_agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "calendar_agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "supervisor_agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "chat_agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "supervisor_agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Llama3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "supervisor_agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "133b3127-c2f0-4004-bab5-800790b4d80c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c321abd01d88d8b47aec82694d51dafefcde21b576cf168decfc6e6e2db7b807"
+  },
+  "id": "KYR8VWKFFo7spIzO",
+  "tags": [
+    {
+      "createdAt": "2025-07-21T10:48:25.411Z",
+      "updatedAt": "2025-07-21T10:48:25.411Z",
+      "id": "LPLZ5ctgOVg5ZC7c",
+      "name": "Praxis Box"
+    }
+  ]
+}

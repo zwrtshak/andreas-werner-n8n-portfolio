@@ -1,0 +1,334 @@
+{
+  "name": "email_agent",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        1060,
+        -100
+      ],
+      "id": "84f48d8f-c4ab-4fee-b761-2324ed7d7a4f",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={\n  \"role\": \"system\",\n  \"content\": \"Du bist der E-Mail Assistent der Hautarztpraxis.\\n\\n## AUFGABEN:\\n- E-Mails verfassen\\n- E-Mails beantworten\\n- Terminbestätigungen senden\\n- Befunde versenden\\n\\n## E-MAIL VORLAGEN:\\n\\n### Terminbestätigung:\\n\\\"Sehr geehrte/r [NAME], Ihr Termin am [DATUM] um [UHRZEIT] ist bestätigt. Bringen Sie bitte Ihre Versichertenkarte mit. Mit freundlichen Grüßen, Praxis Dr. [NAME]\\\"\\n\\n### Befund:\\n\\\"Sehr geehrte/r [NAME], anbei Ihr Befund vom [DATUM]. Bei Fragen kontaktieren Sie uns gerne. Mit freundlichen Grüßen, Praxis Dr. [NAME]\\\"\\n\\n### Rezept:\\n\\\"Sehr geehrte/r [NAME], Ihr Rezept ist abholbereit. Öffnungszeiten: Mo-Fr 8-18 Uhr. Mit freundlichen Grüßen, Praxis Dr. [NAME]\\\"\\n\\n## REGELN:\\n- Immer höflich und professionell\\n- Praxisname verwenden\\n- Kontaktdaten anhängen\\n- DSGVO beachten\\n\\nSchreibe klare, professionelle E-Mails auf Deutsch!\"\n}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        1280,
+        -100
+      ],
+      "id": "4e8952ad-9ab2-438d-873d-5a4a7b8d279b",
+      "name": "email_agent"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1200,
+        280
+      ],
+      "id": "b6050a46-d0a9-451d-929c-8434266c09d2",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "read emails from supabase ",
+        "operation": "get",
+        "tableId": "emails",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Value', ``, 'string') }}"
+            },
+            {
+              "keyName": "sender",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Value', ``, 'string') }}"
+            },
+            {
+              "keyName": "subject",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Value', ``, 'string') }}"
+            },
+            {
+              "keyName": "body",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Value', ``, 'string') }}"
+            },
+            {
+              "keyName": "received_at",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Value', ``, 'string') }}"
+            },
+            {
+              "keyName": "status",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Value', ``, 'string') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        1660,
+        280
+      ],
+      "id": "37bf1e24-105e-47aa-8007-3c29012fb3c3",
+      "name": "email_read",
+      "credentials": {
+        "supabaseApi": {
+          "id": "o4G3LkDd6Z3PleeZ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Save emails to supabase",
+        "tableId": "emails",
+        "dataToSend": "={\n  \"sender\": \"{{ $json['from_email'] }}\",\n  \"subject\": \"{{ $json['subject'] }}\",\n  \"body\": \"{{ $json['body'] }}\",\n  \"received_at\": \"{{ $json['received_at'] }}\",\n  \"status\": \"new\"\n}\n"
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        1520,
+        280
+      ],
+      "id": "e9532e38-2b02-459f-b6e7-d85be7d0ecba",
+      "name": "email_dump",
+      "credentials": {
+        "supabaseApi": {
+          "id": "o4G3LkDd6Z3PleeZ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Delete email from supabase table \"emails\"",
+        "operation": "delete",
+        "tableId": "emails",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Field_Value', ``, 'string') }}"
+            },
+            {
+              "keyName": "sender",
+              "condition": "eq",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Field_Value', ``, 'string') }}"
+            },
+            {
+              "keyName": "subject",
+              "condition": "eq",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Field_Value', ``, 'string') }}"
+            },
+            {
+              "keyName": "body",
+              "condition": "eq",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Field_Value', ``, 'string') }}"
+            },
+            {
+              "keyName": "received_at",
+              "condition": "eq",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Field_Value', ``, 'string') }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Field_Value', ``, 'string') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        1820,
+        280
+      ],
+      "id": "d3873f11-a7a3-4541-81fa-5a6fa2535f55",
+      "name": "email_delete",
+      "credentials": {
+        "supabaseApi": {
+          "id": "o4G3LkDd6Z3PleeZ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "fromEmail": "agent@discomat.de",
+        "toEmail": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('To_Email', ``, 'string') }}",
+        "subject": "={{ $json[\"to_email\"] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSendTool",
+      "typeVersion": 2.1,
+      "position": [
+        1380,
+        280
+      ],
+      "id": "44fa4304-fbcb-4a5c-bc81-2ff0ca0224c3",
+      "name": "send_email",
+      "webhookId": "5f60c948-790c-43d6-b676-b124195017b5",
+      "credentials": {
+        "smtp": {
+          "id": "9y3KicQcGmzja3Ru",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "llama3.1:8b-instruct-q4_K_M",
+          "mode": "list",
+          "cachedResultName": "llama3.1:8b-instruct-q4_K_M"
+        },
+        "options": {
+          "maxTokens": 4096,
+          "responseFormat": "text",
+          "presencePenalty": 0,
+          "temperature": 0.2,
+          "timeout": 120000,
+          "topP": 0.9
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        960,
+        280
+      ],
+      "id": "689c151c-635d-4543-a8a8-f5ef79256c31",
+      "name": "Llama",
+      "credentials": {
+        "openAiApi": {
+          "id": "OksK044LOVHGEoet",
+          "name": "Ollama"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "query": "Reply to Leon. Tell him we're on for Friday."
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "email_agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "email_agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "email_dump": {
+      "ai_tool": [
+        [
+          {
+            "node": "email_agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "email_read": {
+      "ai_tool": [
+        [
+          {
+            "node": "email_agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "email_delete": {
+      "ai_tool": [
+        [
+          {
+            "node": "email_agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send_email": {
+      "ai_tool": [
+        [
+          {
+            "node": "email_agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Llama": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "email_agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d3b1078d-90aa-4a5c-b310-76eae3e34301",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c321abd01d88d8b47aec82694d51dafefcde21b576cf168decfc6e6e2db7b807"
+  },
+  "id": "EwmyOa8SjB1z6XvK",
+  "tags": [
+    {
+      "createdAt": "2025-07-21T10:48:25.411Z",
+      "updatedAt": "2025-07-21T10:48:25.411Z",
+      "id": "LPLZ5ctgOVg5ZC7c",
+      "name": "Praxis Box"
+    }
+  ]
+}
