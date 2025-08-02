@@ -3,7 +3,7 @@
 ## Technical Skills
 - **n8n** (advanced)
 - **Supabase** + **pgvector** (vector search, RAG)
-- **Ollama**, **Mistral**, **Whisper**, **ElevenLabs** (AI tools and integration)
+- **Ollama**, **Whisper**, **ElevenLabs** (AI tools and integration)
 - **GitHub**, **VS Code**, **Python**, **Node.js**
 - **MIDI / Audio Plugin Sequencing & Development** (VST-style)
 - **REST API integration**
@@ -24,7 +24,9 @@
 - **Prototyping and Project Architecture** using **React** 
 - **Team Facilitation**
 - **Cross-disciplinary Communication**
-- **Project Development** (KHM Cologne)
+- **Project Development** 
+- **Concept Engineering** 
+
  
 ## Languages
 - **German** (native)

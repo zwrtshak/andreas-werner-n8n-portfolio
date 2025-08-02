@@ -31,7 +31,7 @@ This prototype of an ipad app automates MIDI-based sequencing with focus on the 
 ## 🔧 Technologies Used
 
 - **n8n** for workflow orchestration and automation  
-- **Ollama with Mistral** for local LLM inference and decision support  
+- **Ollama / LM Studio** for local LLM inference and decision support  
 - **Supabase with pgvector** for RAG / vector-memory retrieval  
 - **Custom fine-tuned retrieval model** based on workflow Q&A JSONL dataset  
 - **Whisper & ElevenLabs** for speech interfaces  
